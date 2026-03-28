@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz — QuizEngine</title>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg: #0a0a0f;
+            --surface: #111118;
+            --border: rgba(255,255,255,0.07);
+            --accent: #c8ff00;
+            --accent2: #00d4ff;
+            --text: #f0f0f5;
+            --muted: #6b6b80;
+            --card: #16161f;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'DM Sans', sans-serif;
+            min-height: 100vh;
+            padding: 40px 20px 80px;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(200,255,0,0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(200,255,0,0.02) 1px, transparent 1px);
+            background-size: 60px 60px;
+            pointer-events: none;
+        }
+
+        .topbar {
+            max-width: 780px;
+            margin: 0 auto 48px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            animation: fadeDown 0.6s cubic-bezier(0.16,1,0.3,1) both;
+        }
+        @keyframes fadeDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .logo {
+            font-family: 'Syne', sans-serif;
+            font-weight: 800;
+            font-size: 18px;
+            letter-spacing: -0.02em;
+        }
+        .logo span { color: var(--accent); }
+
+        .progress-wrap {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 13px;
+            color: var(--muted);
+        }
+        .progress-bar {
+            width: 120px;
+            height: 4px;
+            background: var(--border);
+            border-radius: 100px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), var(--accent2));
+            border-radius: 100px;
+            transition: width 0.4s ease;
+            width: 0%;
+        }
+
+        .greeting {
+            max-width: 780px;
+            margin: 0 auto 40px;
+            animation: fadeUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.1s both;
+        }
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .greeting h2 {
+            font-family: 'Syne', sans-serif;
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+        .greeting h2 span { color: var(--accent); }
+        .greeting p { color: var(--muted); font-size: 14px; margin-top: 6px; }
+
+        .container { max-width: 780px; margin: 0 auto; }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 20px;
+            margin-top: 40px;
+        }
+        .section-icon {
+            width: 40px; height: 40px;
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+        .section-icon.gk { background: rgba(200,255,0,0.1); border: 1px solid rgba(200,255,0,0.2); }
+        .section-icon.tech { background: rgba(0,212,255,0.1); border: 1px solid rgba(0,212,255,0.2); }
+
+        .section-title {
+            font-family: 'Syne', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+        .section-title.gk { color: var(--accent); }
+        .section-title.tech { color: var(--accent2); }
+        .section-count { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+        .questions-grid { display: grid; gap: 12px; }
+
+        .question-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            transition: border-color 0.2s;
+            animation: fadeUp 0.5s cubic-bezier(0.16,1,0.3,1) both;
+        }
+        .question-card:hover { border-color: rgba(255,255,255,0.12); }
+
+        .q-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            margin-bottom: 18px;
+        }
+        .q-num {
+            font-family: 'Syne', sans-serif;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            color: var(--muted);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 4px 10px;
+            border-radius: 100px;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+        .q-text { font-size: 15px; font-weight: 500; line-height: 1.5; }
+
+        .options { display: grid; gap: 8px; }
+
+        .option-label {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.15s;
+            font-size: 14px;
+        }
+        .option-label:hover {
+            border-color: rgba(200,255,0,0.3);
+            background: rgba(200,255,0,0.04);
+        }
+
+        input[type="radio"] { display: none; }
+        input[type="radio"]:checked + .option-label {
+            border-color: var(--accent);
+            background: rgba(200,255,0,0.08);
+            color: var(--accent);
+        }
+
+        .radio-dot {
+            width: 18px; height: 18px;
+            border-radius: 50%;
+            border: 2px solid var(--border);
+            flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.15s;
+        }
+        input[type="radio"]:checked + .option-label .radio-dot {
+            border-color: var(--accent);
+            background: var(--accent);
+        }
+        input[type="radio"]:checked + .option-label .radio-dot::after {
+            content: '';
+            width: 6px; height: 6px;
+            background: #0a0a0f;
+            border-radius: 50%;
+        }
+
+        .submit-area {
+            max-width: 780px;
+            margin: 48px auto 0;
+        }
+        .submit-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 28px 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 24px;
+        }
+        .submit-info { font-size: 14px; color: var(--muted); line-height: 1.6; }
+        .submit-info strong { color: var(--text); display: block; font-size: 16px; margin-bottom: 4px; }
+
+        .btn-submit {
+            background: var(--accent);
+            color: #0a0a0f;
+            font-family: 'Syne', sans-serif;
+            font-size: 15px;
+            font-weight: 700;
+            border: none;
+            border-radius: 12px;
+            padding: 16px 32px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: transform 0.15s, box-shadow 0.15s;
+            flex-shrink: 0;
+        }
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(200,255,0,0.3);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="topbar">
+        <div class="logo">Quiz<span>Engine</span></div>
+        <div class="progress-wrap">
+            <span>12 Questions</span>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="greeting">
+        <h2>Hello, <span th:text="${name}">User</span> 👋</h2>
+        <p>Answer all 12 questions carefully. Your score will be saved automatically.</p>
+    </div>
+
+    <form action="/result" method="post" id="quizForm">
+        <input type="hidden" name="name" th:value="${name}" />
+
+        <div class="container">
+
+            <div class="section-header">
+                <div class="section-icon gk">🌍</div>
+                <div>
+                    <div class="section-title gk">General Knowledge</div>
+                    <div class="section-count">Questions 1 – 8</div>
+                </div>
+            </div>
+
+            <div class="questions-grid">
+
+                <div class="question-card" style="animation-delay:0.05s">
+                    <div class="q-header"><span class="q-num">Q 01</span><span class="q-text">What is 2 + 2?</span></div>
+                    <div class="options">
+                        <input type="radio" name="q1" value="3" id="q1a" required>
+                        <label for="q1a" class="option-label"><span class="radio-dot"></span> 3</label>
+                        <input type="radio" name="q1" value="4" id="q1b">
+                        <label for="q1b" class="option-label"><span class="radio-dot"></span> 4</label>
+                        <input type="radio" name="q1" value="5" id="q1c">
+                        <label for="q1c" class="option-label"><span class="radio-dot"></span> 5</label>
+                    </div>
+                </div>
+
+                <div class="question-card" style="animation-delay:0.1s">
+                    <div class="q-header"><span class="q-num">Q 02</span><span class="q-text">What is the capital of France?</span></div>
+                    <div class="options">
+                        <input type="radio" name="q2" value="Berlin" id="q2a" required>
+                        <label for="q2a" class="option-label"><span class="radio-dot"></span> Berlin</label>
+                        <input type="radio" name="q2" value="Madrid" id="q2b">
+                        <label for="q2b" class="option-label"><span class="radio-dot"></span> Madrid</label>
+                        <input type="radio" name="q2" value="Paris" id="q2c">
+                        <label for="q2c" class="option-label"><span class="radio-dot"></span> Paris</label>
+                    </div>
+                </div>
+
+                <div class="question-card" style="animation-delay:0.15s">
+                    <div class="q-header"><span class="q-num">Q 03</span><span class="q-text">Who wrote Romeo and Juliet?</span></div>
+                    <div class="options">
+                        <input type="radio" name="q3" value="Shakespeare" id="q3a" required>
+                        <label for="q3a" class="option-label"><span class="radio-dot"></span> William Shakespeare</label>
+                        <input type="radio" name="q3" value="Charles Dickens" id="q3b">
+                        <label for="q3b" class="option-label"><span class="radio-dot"></span> Charles Dickens</label>
+                        <input type="radio" name="q3" value="Mark Twain" id="q3c">
+                        <label for="q3c" class="option-label"><span class="radio-dot"></span> Mark Twain</label>
+                    </div>
+                </div>
+
+                <div class="question-card" style="animation-delay:0.2s">
+                    <div class="q-header"><span class="q-num">Q 04</span><span class="q-text">Which planet is known as the Red Planet?</span></div>
+                    <div class="options">
+                        <input type="radio" name="q4" value="Mars" id="q4a" required>
+                        <label for="q4a" class="option-label"><span class="radio-dot"></span> Mars</label>
+                        <input type="radio" name="q4" value="Earth" id="q4b">
+                        <label for="q4b" class="option-label"><span class="radio-dot"></span> Earth</label>
+                        <input type="radio" name="q4" value="Jupiter" id="q4c">
+                        <label for="q4c" class="option-label"><span class="radio-dot"></span> Jupiter</label>
+                    </div>
+                </div>
+
+                <div class="question-card" style="animation-delay:0.25s">
+                    <div class="q-header"><span class="q-num">Q 05</span><span class="q-text">Which is the largest ocean?</span></div>
+                    <div class="options">
+                        <input type="radio" name="q5" value="Pacific" id="q5a" required>
+                        <label for="q5a" class="option-label"><span class="radio-dot"></span> Pacific Ocean</label>
+                        <input type="radio" name="q5" value="Indian" id="q5b">
+                        <label for="q5b" class="option-label"><span class="radio-dot"></span> Indian Ocean</label>
+                        <input type="radio" name="q5" value="Atlantic" id="q5c">
+                        <label for="q5c" class="option-label"><span class="radio-dot"></span> Atlantic Ocean</label>
+                    </div>
+                </div>
+
+                <div class="question-card" style="animation-delay:0.3s">
+                    <div class="q-header"><span class="q-num">Q 06</span><span class="q-text">What is the capital of India?</span></div>
+                    <div class="options">
+                        <input type="radio" name="q6" value="Mumbai" id="q6a" required>
+                        <label for="q6a" class="option-label"><span class="radio-dot"></span> Mumbai</label>
+                        <input type="radio" name="q6" value="New Delhi" id="q6b">
+                        <label for="q6b" class="option-label"><span class="radio-dot"></span> New Delhi</label>
+                        <input type="radio" name="q6" value="Chennai" id="q6c">
+                        <label for="q6c" class="option-label"><span class="radio-dot"></span> Chennai</label>
+                    </div>
+                </div>
+
+                <div class="question-card" style="animation-delay:0.35s">
+                    <div class="q-header"><span class="q-num">Q 07</span><span class="q-text">What is the capital of Japan?</span></div>
+                    <div class="options">
+                        <input type="radio" name="q7" value="Seoul" id="q7a" required>
+                        <label for="q7a" class="option-label"><span class="radio-dot"></span> Seoul</label>
+                        <input type="radio" name="q7" value="Tokyo" id="q7b">
+                        <label for="q7b" class="option-label"><span class="radio-dot"></span> Tokyo</label>
+                        <input type="radio" name="q7" value="Beijing" id="q7c">
+                        <label for="q7c" class="option-label"><span class="radio-dot"></span> Beijing</label>
+                    </div>
+                </div>
+
+                <div class="question-card" style="animation-delay:0.4s">
+                    <div class="q-header"><span class="q-num">Q 08</span><span class="q-text">What is the capital of China?</span></div>
+                    <div class="options">
+                        <input type="radio" name="q8" value="Shanghai" id="q8a" required>
+                        <label for="q8a" class="option-label"><span class="radio-dot"></span> Shanghai</label>
+                        <input type="radio" name="q8" value="Beijing" id="q8b">
+                        <label for="q8b" class="option-label"><span class="radio-dot"></span> Beijing</label>
+                        <input type="radio" name="q8" value="Bangkok" id="q8c">
+                        <label for="q8c" class="option-label"><span class="radio-dot"></span> Bangkok</label>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="section-header">
+                <div class="section-icon tech">💻</div>
+                <div>
+                    <div class="section-title tech">Technical Section</div>
+                    <div class="section-count">Questions 9 – 12</div>
+                </div>
+            </div>
+
+            <div class="questions-grid">
+
+                <div class="question-card" style="animation-delay:0.45s">
+                    <div class="q-header"><span class="q-num">Q 09</span><span class="q-text">CSS stands for?</span></div>
+                    <div class="options">
+                        <input type="radio" name="q9" value="Cascading Style Sheets" id="q9a" required>
+                        <label for="q9a" class="option-label"><span class="radio-dot"></span> Cascading Style Sheets</label>
+                        <input type="radio" name="q9" value="Creative Style System" id="q9b">
+                        <label for="q9b" class="option-label"><span class="radio-dot"></span> Creative Style System</label>
+                        <input type="radio" name="q9" value="Computer Styled Sections" id="q9c">
+                        <label for="q9c" class="option-label"><span class="radio-dot"></span> Computer Styled Sections</label>
+                    </div>
+                </div>
+
+                <div class="question-card" style="animation-delay:0.5s">
+                    <div class="q-header"><span class="q-num">Q 10</span><span class="q-text">JSON stands for?</span></div>
+                    <div class="options">
+                        <input type="radio" name="q10" value="JavaScript Object Notation" id="q10a" required>
+                        <label for="q10a" class="option-label"><span class="radio-dot"></span> JavaScript Object Notation</label>
+                        <input type="radio" name="q10" value="Java Source Open Network" id="q10b">
+                        <label for="q10b" class="option-label"><span class="radio-dot"></span> Java Source Open Network</label>
+                        <input type="radio" name="q10" value="Java Standard Output Name" id="q10c">
+                        <label for="q10c" class="option-label"><span class="radio-dot"></span> Java Standard Output Name</label>
+                    </div>
+                </div>
+
+                <div class="question-card" style="animation-delay:0.55s">
+                    <div class="q-header"><span class="q-num">Q 11</span><span class="q-text">DOM stands for?</span></div>
+                    <div class="options">
+                        <input type="radio" name="q11" value="Document Object Model" id="q11a" required>
+                        <label for="q11a" class="option-label"><span class="radio-dot"></span> Document Object Model</label>
+                        <input type="radio" name="q11" value="Data Object Management" id="q11b">
+                        <label for="q11b" class="option-label"><span class="radio-dot"></span> Data Object Management</label>
+                        <input type="radio" name="q11" value="Digital Ordinance Model" id="q11c">
+                        <label for="q11c" class="option-label"><span class="radio-dot"></span> Digital Ordinance Model</label>
+                    </div>
+                </div>
+
+                <div class="question-card" style="animation-delay:0.6s">
+                    <div class="q-header"><span class="q-num">Q 12</span><span class="q-text">XML stands for?</span></div>
+                    <div class="options">
+                        <input type="radio" name="q12" value="Extensible Markup Language" id="q12a" required>
+                        <label for="q12a" class="option-label"><span class="radio-dot"></span> Extensible Markup Language</label>
+                        <input type="radio" name="q12" value="Extra Modern Language" id="q12b">
+                        <label for="q12b" class="option-label"><span class="radio-dot"></span> Extra Modern Language</label>
+                        <input type="radio" name="q12" value="Example Markup Level" id="q12c">
+                        <label for="q12c" class="option-label"><span class="radio-dot"></span> Example Markup Level</label>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="submit-area">
+            <div class="submit-card">
+                <div class="submit-info">
+                    <strong>Ready to submit?</strong>
+                    Make sure all 12 questions are answered before submitting.
+                </div>
+                <button type="submit" class="btn-submit">Submit Quiz →</button>
+            </div>
+        </div>
+    </form>
+
+    <script>
+        const radios = document.querySelectorAll('input[type="radio"]');
+        const fill = document.getElementById('progressFill');
+        const answered = new Set();
+        radios.forEach(r => r.addEventListener('change', () => {
+            answered.add(r.name);
+            fill.style.width = (answered.size / 12 * 100) + '%';
+        }));
+    </script>
+</body>
+</html>
